@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ohm's Law Calculator</title>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; display:flex; justify-content:center; padding:40px; }
+    .container { background:white; padding:25px; border-radius:12px; width:380px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+    input, select { width:100%; padding:10px; margin:6px 0 16px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+    .result { background:#f0f0f0; padding:15px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+   
+
+    <h2>Ohm's Law Calculator</h2>
+    <p>By Tom Drossart ©</p>
+
+    <label>Spanning (U) in Volt:</label>
+    <input id="U" type="number" placeholder="bv. 230" />
+
+    <label>Stroom (I) in Ampère:</label>
+    <input id="I" type="number" placeholder="bv. 0.5" />
+
+    <label>Weerstand (R) in Ohm:</label>
+    <input id="R" type="number" placeholder="bv. 10" />
+
+    <label>Vermogen (P) in Watt:</label>
+    <input id="P" type="number" placeholder="bv. 50" />
+
+    <h3>Resultaat</h3>
+    <div class="result">
+      <p><strong>Spanning (U):</strong> <span id="outU">---</span> V</p>
+      <p><strong>Stroom (I):</strong> <span id="outI">---</span> A</p>
+      <p><strong>Weerstand (R):</strong> <span id="outR">---</span> Ω</p>
+      <p><strong>Vermogen (P):</strong> <span id="outP">---</span> W</p>
+    </div>
+
+    <h3>Grafiek: Stroom bij veranderende spanning</h3>
+    <canvas id="chartI" height="200"></canvas>
+
+    <h3>Grafiek: Vermogen bij veranderende spanning</h3>
+    <canvas id="chartP" height="200"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const U = document.getElementById("U");
+    const I = document.getElementById("I");
+    const R = document.getElementById("R");
+    const P = document.getElementById("P");
+
+    const outU = document.getElementById("outU");
+    const outI = document.getElementById("outI");
+    const outR = document.getElementById("outR");
+    const outP = document.getElementById("outP");
+
+    const ctxI = document.getElementById('chartI').getContext('2d');
+    const ctxP = document.getElementById('chartP').getContext('2d');
+
+    const chartI = new Chart(ctxI, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Stroom (A)', data: [] }] },
+      options: { responsive: true }
+    });
+
+    const chartPwr = new Chart(ctxP, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Vermogen (W)', data: [] }] },
+      options: { responsive: true }
+    });
+
+    function calculate() {
+      let u = parseFloat(U.value);
+      let i = parseFloat(I.value);
+      let r = parseFloat(R.value);
+      let p = parseFloat(P.value);
+
+      let filled = [!isNaN(u), !isNaN(i), !isNaN(r), !isNaN(p)].filter(v => v).length;
+
+      if (filled < 2) return;
+
+      if (!isNaN(u) && !isNaN(i)) { r = u/i; p = u*i; }
+      else if (!isNaN(u) && !isNaN(r)) { i = u/r; p = u*i; }
+      else if (!isNaN(i) && !isNaN(r)) { u = i*r; p = u*i; }
+      else if (!isNaN(u) && !isNaN(p)) { i = p/u; r = u/i; }
+      else if (!isNaN(i) && !isNaN(p)) { u = p/i; r = u/i; }
+      else if (!isNaN(r) && !isNaN(p)) { i = Math.sqrt(p/r); u = i*r; }
+
+      outU.textContent = u.toFixed(3);
+      outI.textContent = i.toFixed(3);
+      outR.textContent = r.toFixed(3);
+      outP.textContent = p.toFixed(3);
+
+      updateGraphs(u, i, p);
+    }
+
+    function updateGraphs(u, i, p) {
+      const volt = []; const amps = []; const watts = [];
+
+      for (let v = 1; v <= u * 1.5; v += u / 20) {
+        volt.push(v.toFixed(0));
+        amps.push((p / v).toFixed(3));
+        watts.push((p).toFixed(2));
+      }
+
+      chartI.data.labels = volt;
+      chartI.data.datasets[0].data = amps;
+      chartI.update();
+
+      chartPwr.data.labels = volt;
+      chartPwr.data.datasets[0].data = watts;
+      chartPwr.update();
+    }
+
+    [U,I,R,P].forEach(el => el.addEventListener("input", calculate));
+  </script>
+</body>
+</html>
